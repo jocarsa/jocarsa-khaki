@@ -385,6 +385,7 @@ if (isLoggedIn() && $_SESSION['username'] === 'jocarsa' && isset($_GET['view_use
     <meta charset="UTF-8">
     <title>jocarsa | khaki</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/svg+xml" href="khaki.png" />
 </head>
 <body>
 <h1><img src="khaki.png">jocarsa | kakhi</h1>
