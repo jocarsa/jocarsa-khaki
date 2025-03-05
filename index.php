@@ -542,6 +542,7 @@ document.addEventListener('DOMContentLoaded', function(){
     updateTotalHours();
 });
 </script>
+<script src="https://ghostwhite.jocarsa.com/analytics.js?user=khaki.jocarsa.com"></script>
 </body>
 </html>
 
