@@ -19,7 +19,7 @@ body {
 
 h2, h3 {
     margin-top: 0;
-    font-family: "Segoe UI", Tahoma, sans-serif;
+    font-family: Ubuntu, Tahoma, sans-serif;
 }
 
 /* Top bar */
@@ -179,5 +179,12 @@ h1{
 h1 img{
 	width:60px;
 	margin-right:20px;
+}
+.login{
+	width:300px;
+	
+}
+.login button{
+	width:100%;
 }
 

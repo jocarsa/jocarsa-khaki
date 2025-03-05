@@ -389,9 +389,10 @@ if (isLoggedIn() && $_SESSION['username'] === 'jocarsa' && isset($_GET['view_use
 </head>
 <body>
 <h1><img src="khaki.png">jocarsa | kakhi</h1>
-<div class="container">
+
 
 <?php if (!isLoggedIn()): ?>
+<div class="container login">
     <?php
     // Mostrar login o registro
     $mode = $_GET['mode'] ?? 'login';
@@ -433,8 +434,9 @@ if (isLoggedIn() && $_SESSION['username'] === 'jocarsa' && isset($_GET['view_use
         </form>
         <p><a href="index.php?mode=register">¿No tienes cuenta? Regístrate</a></p>
     <?php endif; ?>
-
+</div>
 <?php else: ?>
+<div class="container">
     <?php
     // Usuario con sesión
     $currentUserId = $_SESSION['user_id'];
@@ -514,7 +516,7 @@ if (isLoggedIn() && $_SESSION['username'] === 'jocarsa' && isset($_GET['view_use
         <button type="submit">Guardar</button>
     </form>
     <?php endif; ?>
-
+</div>
 <?php endif; ?>
 </div>
 
