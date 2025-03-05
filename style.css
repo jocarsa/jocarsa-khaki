@@ -1,0 +1,183 @@
+/* Base */
+@import url('https://static.jocarsa.com/fuentes/ubuntu-font-family-0.83/ubuntu.css');
+
+body {
+    margin: 0;
+    padding: 0;
+    background: #f0f0f0;
+    font-family: Ubuntu,Arial, sans-serif;
+}
+
+.container {
+    width: 90%;
+    max-width: 900px;
+    margin: 30px auto;
+    background: #fff;
+    padding: 20px;
+    border-radius: 5px;
+}
+
+h2, h3 {
+    margin-top: 0;
+    font-family: "Segoe UI", Tahoma, sans-serif;
+}
+
+/* Top bar */
+.top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #e9ecef;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+.top-bar .logout {
+    text-decoration: none;
+    color: #333;
+    font-weight: bold;
+}
+.top-bar .logout:hover {
+    color: #000;
+}
+
+/* Mensajes */
+.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 10px;
+    border: 1px solid #f5c6cb;
+    border-radius: 3px;
+    margin-bottom: 10px;
+}
+.success {
+    background-color: #d4edda;
+    color: #155724;
+    padding: 10px;
+    border: 1px solid #c3e6cb;
+    border-radius: 3px;
+    margin-bottom: 10px;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+label {
+    font-weight: bold;
+}
+input[type="text"],
+input[type="email"],
+input[type="password"] {
+    padding: 6px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+}
+
+button {
+    width: fit-content;
+    padding: 8px 16px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 14px;
+}
+button:hover {
+    background: #0056b3;
+}
+
+ul {
+    list-style: none;
+    padding: 0;
+}
+ul li {
+    margin-bottom: 5px;
+}
+ul li a {
+    color: #007bff;
+    text-decoration: none;
+}
+ul li a:hover {
+    text-decoration: underline;
+}
+
+.total-hours {
+    background: #e2f0d9;
+    padding: 10px;
+    border: 1px solid #c3e6cb;
+    border-radius: 4px;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+/* Calendario */
+.calendar-grid {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.calendar-grid thead th {
+    background: #f1f1f1;
+    font-weight: bold;
+    border: 1px solid #ddd;
+    padding: 5px;
+}
+
+.calendar-grid tbody td {
+    height: 80px;
+    vertical-align: top;
+    border: 1px solid #ddd;
+    position: relative;
+    padding: 4px;
+}
+.calendar-grid td.empty {
+    background-color: #fafafa;
+}
+
+/* Día */
+.day-number {
+    font-size: 12px;
+    font-weight: bold;
+    text-align: right;
+    margin-bottom: 4px;
+}
+
+/* Input de horas */
+.hours-input {
+    width: 50px;
+    text-align: center;
+}
+
+.hours-display {
+    margin-top: 5px;
+    font-size: 14px;
+}
+
+/* Resaltar 1 jun - 13 jun */
+.highlight {
+    background-color: #fff7aa;
+}
+h1{
+	text-align:center;
+	margin:auto;
+	display: flex;
+	flex-direction: row;
+	flex-wrap: nowrap;
+	justify-content: center;
+	align-items: center;
+	align-content: stretch;
+}
+h1 img{
+	width:60px;
+	margin-right:20px;
+}
+
