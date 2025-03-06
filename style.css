@@ -5,7 +5,7 @@ body {
     margin: 0;
     padding: 0;
     background: #f0f0f0;
-    font-family: Ubuntu,Arial, sans-serif;
+    font-family: Ubuntu, Arial, sans-serif;
 }
 
 .container {
@@ -166,25 +166,51 @@ ul li a:hover {
 .highlight {
     background-color: #fff7aa;
 }
-h1{
-	text-align:center;
-	margin:auto;
-	display: flex;
-	flex-direction: row;
-	flex-wrap: nowrap;
-	justify-content: center;
-	align-items: center;
-	align-content: stretch;
+
+h1 {
+    text-align: center;
+    margin: auto;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: center;
+    align-content: stretch;
 }
-h1 img{
-	width:60px;
-	margin-right:20px;
+h1 img {
+    width: 60px;
+    margin-right: 20px;
 }
-.login{
-	width:300px;
-	
+.login {
+    width: 300px;
 }
-.login button{
-	width:100%;
+.login button {
+    width: 100%;
+}
+
+/* Días con 0 horas (fuera de rango junio) - fondo gris */
+.calendar-grid td.zero {
+    background-color: #e0e0e0;
+}
+
+/* Días con horas distintas de 0 (fuera de rango junio) - fondo blanco */
+.calendar-grid td.nonzero {
+    background-color: #ffffff;
+}
+
+/* Admin User List */
+.user-list {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+.user-list th,
+.user-list td {
+    border: 1px solid #ddd;
+    padding: 8px;
+}
+.user-list th {
+    background-color: #f1f1f1;
+    font-weight: bold;
 }
 

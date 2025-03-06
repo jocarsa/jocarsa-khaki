@@ -238,9 +238,32 @@ function getAllUsersWithCalendar()
 }
 
 /**
+ * Obtiene estadísticas del calendario de un usuario:
+ * - Primer día con horas != 0
+ * - Último día con horas != 0
+ * - Total de horas (sólo de días con horas != 0)
+ */
+function getCalendarStatsForUser($userId)
+{
+    $pdo = getDBConnection();
+    $stmt = $pdo->prepare("
+        SELECT 
+            MIN(date) AS start_day,
+            MAX(date) AS end_day,
+            SUM(hours) AS total_hours
+        FROM calendars
+        WHERE user_id = :u AND hours != 0
+    ");
+    $stmt->execute([':u' => $userId]);
+    $stats = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $stats;
+}
+
+/**
  * Imprime el calendario mensual en formato de cuadrícula (lunes-domingo).
  * - Resalta en amarillo (class highlight) del 1-jun al 13-jun
  * - Solo editable del 3-mar al 13-jun
+ * - Los días con 0 horas se muestran en gris (clase zero) y los días con horas != 0 en blanco (clase nonzero), excepto los días de junio resaltados
  */
 function renderMonthlyCalendarGrid($year, $month, $entries, $canEdit)
 {
@@ -278,19 +301,23 @@ function renderMonthlyCalendarGrid($year, $month, $entries, $canEdit)
             } else {
                 // Día con cero a la izquierda
                 $dayString = str_pad($currentDay, 2, '0', STR_PAD_LEFT);
-                $dateStr   = "$year-$monthStr-$dayString";  // IMPORTANTE, con cero
+                $dateStr   = "$year-$monthStr-$dayString";
                 $hours     = $entries[$dateStr] ?? 0;
 
-                // ¿Resaltar?
-                $classExtra = '';
+                // Determinar la clase de fondo
                 if ($dateStr >= '2025-06-01' && $dateStr <= '2025-06-13') {
                     $classExtra = ' highlight';
+                } else {
+                    if (floatval($hours) == 0) {
+                        $classExtra = ' zero';
+                    } else {
+                        $classExtra = ' nonzero';
+                    }
                 }
 
                 echo '<td class="'.$classExtra.'">';
                 echo '<div class="day-number">'.$currentDay.'</div>';
 
-                // ¿Dentro del rango editable?
                 $withinRange = ($dateStr >= START_DATE && $dateStr <= END_DATE);
                 if ($canEdit && $withinRange) {
                     echo '<input type="text" class="hours-input" name="hours_'.$dateStr.'" value="'.$hours.'" size="2" />';
@@ -388,8 +415,7 @@ if (isLoggedIn() && $_SESSION['username'] === 'jocarsa' && isset($_GET['view_use
     <link rel="icon" type="image/svg+xml" href="khaki.png" />
 </head>
 <body>
-<h1><img src="khaki.png">jocarsa | kakhi</h1>
-
+<h1><img src="khaki.png">jocarsa | khaki</h1>
 
 <?php if (!isLoggedIn()): ?>
 <div class="container login">
@@ -476,16 +502,32 @@ if (isLoggedIn() && $_SESSION['username'] === 'jocarsa' && isset($_GET['view_use
 
     <?php if ($isAdmin): ?>
         <h3>Ver calendarios de otros usuarios</h3>
-        <ul>
-        <?php
-        $users = getAllUsersWithCalendar();
-        foreach ($users as $u) {
-            echo '<li><a href="index.php?view_user='.$u['id'].'">';
-            echo htmlspecialchars($u['name']).' ('.htmlspecialchars($u['username']).')';
-            echo '</a></li>';
-        }
-        ?>
-        </ul>
+        <table class="user-list">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Usuario</th>
+                    <th>Día inicio</th>
+                    <th>Día fin</th>
+                    <th>Total horas</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php
+                $users = getAllUsersWithCalendar();
+                foreach ($users as $u) {
+                    $stats = getCalendarStatsForUser($u['id']);
+                    echo '<tr>';
+                    echo '<td><a href="index.php?view_user='.$u['id'].'">' . htmlspecialchars($u['name']) . '</a></td>';
+                    echo '<td>'.htmlspecialchars($u['username']).'</td>';
+                    echo '<td>' . ($stats['start_day'] ?? 'N/A') . '</td>';
+                    echo '<td>' . ($stats['end_day'] ?? 'N/A') . '</td>';
+                    echo '<td>' . ($stats['total_hours'] ?? 0) . '</td>';
+                    echo '</tr>';
+                }
+                ?>
+            </tbody>
+        </table>
     <?php endif; ?>
 
     <?php if ($userIdToShow !== $currentUserId): ?>
