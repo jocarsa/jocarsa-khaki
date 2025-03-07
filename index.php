@@ -132,7 +132,6 @@ function getDateRange($months)
     $dates = [];
     foreach ($months as $m) {
         $year  = $m['year'];
-        // <-- Importante para que sea '03' en vez de '3'
         $month = str_pad($m['month'], 2, '0', STR_PAD_LEFT);
 
         $start = new DateTime("$year-$month-01");
@@ -142,6 +141,21 @@ function getDateRange($months)
             $dates[] = $start->format('Y-m-d');
             $start->modify('+1 day');
         }
+    }
+    return $dates;
+}
+
+/**
+ * Genera array de fechas 'YYYY-MM-DD' entre $start y $end (inclusive)
+ */
+function getDateRangeBetween($start, $end)
+{
+    $dates = [];
+    $current = new DateTime($start);
+    $stop    = new DateTime($end);
+    while ($current <= $stop) {
+        $dates[] = $current->format('Y-m-d');
+        $current->modify('+1 day');
     }
     return $dates;
 }
@@ -224,6 +238,7 @@ function getTotalHours($userId, $dates)
 
 /**
  * Todos los usuarios que tengan alguna fila en calendars
+ * (o, si quieres, todos los usuarios en la tabla, quita el JOIN)
  */
 function getAllUsersWithCalendar()
 {
@@ -241,7 +256,7 @@ function getAllUsersWithCalendar()
  * Obtiene estadísticas del calendario de un usuario:
  * - Primer día con horas != 0
  * - Último día con horas != 0
- * - Total de horas (sólo de días con horas != 0)
+ * - Total de horas
  */
 function getCalendarStatsForUser($userId)
 {
@@ -263,7 +278,8 @@ function getCalendarStatsForUser($userId)
  * Imprime el calendario mensual en formato de cuadrícula (lunes-domingo).
  * - Resalta en amarillo (class highlight) del 1-jun al 13-jun
  * - Solo editable del 3-mar al 13-jun
- * - Los días con 0 horas se muestran en gris (clase zero) y los días con horas != 0 en blanco (clase nonzero), excepto los días de junio resaltados
+ * - Los días con 0 horas se muestran en gris (clase zero), días con >0 horas se muestran en blanco (clase nonzero),
+ *   excepto los días de junio dentro de 1-13, que se resaltan en amarillo
  */
 function renderMonthlyCalendarGrid($year, $month, $entries, $canEdit)
 {
@@ -274,9 +290,7 @@ function renderMonthlyCalendarGrid($year, $month, $entries, $canEdit)
         9=>'Septiembre',10=>'Octubre',11=>'Noviembre',12=>'Diciembre'
     ];
 
-    // Aseguramos que el mes sea con cero a la izquierda (ej '03')
     $monthStr = str_pad($month, 2, '0', STR_PAD_LEFT);
-
     $firstDay   = new DateTime("$year-$monthStr-01");
     $lastDay    = (clone $firstDay)->modify('last day of this month');
     $firstWeekday = (int)$firstDay->format('N'); // 1=Lunes, 7=Domingo
@@ -299,12 +313,11 @@ function renderMonthlyCalendarGrid($year, $month, $entries, $canEdit)
                 // Celda vacía
                 echo '<td class="empty"></td>';
             } else {
-                // Día con cero a la izquierda
                 $dayString = str_pad($currentDay, 2, '0', STR_PAD_LEFT);
                 $dateStr   = "$year-$monthStr-$dayString";
                 $hours     = $entries[$dateStr] ?? 0;
 
-                // Determinar la clase de fondo
+                // Determinar la clase
                 if ($dateStr >= '2025-06-01' && $dateStr <= '2025-06-13') {
                     $classExtra = ' highlight';
                 } else {
@@ -318,6 +331,7 @@ function renderMonthlyCalendarGrid($year, $month, $entries, $canEdit)
                 echo '<td class="'.$classExtra.'">';
                 echo '<div class="day-number">'.$currentDay.'</div>';
 
+                // Check rango editable
                 $withinRange = ($dateStr >= START_DATE && $dateStr <= END_DATE);
                 if ($canEdit && $withinRange) {
                     echo '<input type="text" class="hours-input" name="hours_'.$dateStr.'" value="'.$hours.'" size="2" />';
@@ -336,11 +350,10 @@ function renderMonthlyCalendarGrid($year, $month, $entries, $canEdit)
     echo '</table>';
 }
 
-/**
- * =========================
- *      Enrutamiento
- * =========================
- */
+// -------------------------------------------------------------------
+//                          RUTAS
+// -------------------------------------------------------------------
+
 $action = $_GET['action'] ?? '';
 
 // 1. Logout
@@ -399,12 +412,33 @@ if ($action === 'save' && isLoggedIn() && $_SERVER['REQUEST_METHOD'] === 'POST')
     exit;
 }
 
-// 5. Admin (jocarsa) quiere ver calendario de otro
-$viewUserId = null;
-if (isLoggedIn() && $_SESSION['username'] === 'jocarsa' && isset($_GET['view_user'])) {
-    $viewUserId = (int)$_GET['view_user'];
+function isAdmin()
+{
+    return (isLoggedIn() && isset($_SESSION['username']) && $_SESSION['username'] === 'jocarsa');
 }
 
+// -------------------------------------------------------------------
+//        NUEVAS RUTAS ESPECÍFICAS PARA ADMINISTRADOR
+// -------------------------------------------------------------------
+
+// 5. Listado de usuarios (por defecto para admin)
+if ($action === 'list_users' && isAdmin()) {
+    // Simplemente cargará la vista de la lista de usuarios
+}
+
+// 6. Ver calendario de un usuario (admin)
+if ($action === 'view_calendar' && isAdmin() && isset($_GET['user_id'])) {
+    $viewUserId = (int)$_GET['user_id'];
+}
+
+// 7. Ver resumen de todos los usuarios (tabla con días en columnas)
+if ($action === 'all_users_summary' && isAdmin()) {
+    // Lógica más abajo en HTML
+}
+
+// -------------------------------------------------------------------
+//              PLANTILLA HTML PRINCIPAL
+// -------------------------------------------------------------------
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -418,151 +452,233 @@ if (isLoggedIn() && $_SESSION['username'] === 'jocarsa' && isset($_GET['view_use
 <h1><img src="khaki.png">jocarsa | khaki</h1>
 
 <?php if (!isLoggedIn()): ?>
-<div class="container login">
-    <?php
-    // Mostrar login o registro
-    $mode = $_GET['mode'] ?? 'login';
-    if ($mode === 'register'):
-    ?>
-        <h2>Registro de Usuario</h2>
-        <?php if (!empty($error)): ?>
-            <div class="error"><?= htmlspecialchars($error) ?></div>
+
+    <!-- ====================== NO LOGUEADO: LOGIN / REGISTER ======================= -->
+    <div class="container login">
+        <?php
+        $mode = $_GET['mode'] ?? 'login';
+        if ($mode === 'register'):
+        ?>
+            <h2>Registro de Usuario</h2>
+            <?php if (!empty($error)): ?>
+                <div class="error"><?= htmlspecialchars($error) ?></div>
+            <?php endif; ?>
+            <form action="index.php?action=register" method="POST">
+                <label>Nombre</label>
+                <input type="text" name="name" required>
+
+                <label>Email</label>
+                <input type="email" name="email" required>
+
+                <label>Usuario</label>
+                <input type="text" name="username" required>
+
+                <label>Contraseña</label>
+                <input type="password" name="password" required>
+
+                <button type="submit">Registrarse</button>
+            </form>
+            <p><a href="index.php?mode=login">¿Ya tienes cuenta? Inicia sesión</a></p>
+
+        <?php else: ?>
+            <h2>Iniciar Sesión</h2>
+            <?php if (!empty($error)): ?>
+                <div class="error"><?= htmlspecialchars($error) ?></div>
+            <?php endif; ?>
+            <form action="index.php?action=login" method="POST">
+                <label>Usuario</label>
+                <input type="text" name="username" required>
+
+                <label>Contraseña</label>
+                <input type="password" name="password" required>
+
+                <button type="submit">Entrar</button>
+            </form>
+            <p><a href="index.php?mode=register">¿No tienes cuenta? Regístrate</a></p>
         <?php endif; ?>
-        <form action="index.php?action=register" method="POST">
-            <label>Nombre</label>
-            <input type="text" name="name" required>
-
-            <label>Email</label>
-            <input type="email" name="email" required>
-
-            <label>Usuario</label>
-            <input type="text" name="username" required>
-
-            <label>Contraseña</label>
-            <input type="password" name="password" required>
-
-            <button type="submit">Registrarse</button>
-        </form>
-        <p><a href="index.php?mode=login">¿Ya tienes cuenta? Inicia sesión</a></p>
-    <?php else: ?>
-        <h2>Iniciar Sesión</h2>
-        <?php if (!empty($error)): ?>
-            <div class="error"><?= htmlspecialchars($error) ?></div>
-        <?php endif; ?>
-        <form action="index.php?action=login" method="POST">
-            <label>Usuario</label>
-            <input type="text" name="username" required>
-
-            <label>Contraseña</label>
-            <input type="password" name="password" required>
-
-            <button type="submit">Entrar</button>
-        </form>
-        <p><a href="index.php?mode=register">¿No tienes cuenta? Regístrate</a></p>
-    <?php endif; ?>
-</div>
-<?php else: ?>
-<div class="container">
-    <?php
-    // Usuario con sesión
-    $currentUserId = $_SESSION['user_id'];
-    $isAdmin       = ($_SESSION['username'] === 'jocarsa');
-
-    // Determinar a qué usuario se va a mostrar
-    $userIdToShow = $currentUserId;
-    if ($isAdmin && $viewUserId) {
-        $userIdToShow = $viewUserId;
-    }
-
-    // Meses de marzo a junio
-    $monthsToShow = [
-        ['year' => 2025, 'month' => 3],
-        ['year' => 2025, 'month' => 4],
-        ['year' => 2025, 'month' => 5],
-        ['year' => 2025, 'month' => 6],
-    ];
-
-    // Generar todas las fechas de esos meses
-    $allDates = getDateRange($monthsToShow);
-    // Crear/recuperar registros
-    $entries = getOrCreateCalendarEntries($userIdToShow, $allDates);
-    // Calcular total
-    $totalHours = getTotalHours($userIdToShow, $allDates);
-    // Se puede editar si es su calendario o si es admin
-    $canEdit = ($userIdToShow === $currentUserId) || $isAdmin;
-    ?>
-    <div class="top-bar">
-        <div>
-            <strong>Sesión iniciada como:</strong> <?= htmlspecialchars($_SESSION['name']) ?> (<?= htmlspecialchars($_SESSION['username']) ?>)
-        </div>
-        <div>
-            <a href="index.php?action=logout" class="logout">Cerrar Sesión</a>
-        </div>
     </div>
 
-    <?php if ($isAdmin): ?>
-        <h3>Ver calendarios de otros usuarios</h3>
-        <table class="user-list">
-            <thead>
-                <tr>
-                    <th>Nombre</th>
-                    <th>Usuario</th>
-                    <th>Día inicio</th>
-                    <th>Día fin</th>
-                    <th>Total horas</th>
-                </tr>
-            </thead>
-            <tbody>
+<?php else: ?>
+
+    <!-- ====================== USUARIO CON SESIÓN ======================= -->
+    <div class="container">
+        <div class="top-bar">
+            <div>
+                <strong>Sesión iniciada como:</strong> 
+                <?= htmlspecialchars($_SESSION['name']) ?> (<?= htmlspecialchars($_SESSION['username']) ?>)
+            </div>
+            <div>
+                <a href="index.php?action=logout" class="logout">Cerrar Sesión</a>
+            </div>
+        </div>
+
+        <?php if (isAdmin()): ?>
+            <!-- Admin: mostrar enlace para la tabla global, enlace para la lista de usuarios -->
+            <p>
+                <a href="index.php?action=list_users">Lista de Usuarios</a> | 
+                <a href="index.php?action=all_users_summary">Ver Calendario (Todos los usuarios)</a>
+            </p>
+
+            <?php
+            // 1) Si no se especificó 'view_calendar' ni 'all_users_summary', o se pidió 'list_users', 
+            //    mostramos la tabla con todos los usuarios y stats.
+            if (
+                ($action === '' || $action === null) 
+                || $action === 'list_users'
+            ) {
+                ?>
+                <h3>Calendarios de Usuarios</h3>
+                <table class="user-list">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Usuario</th>
+                            <th>Día inicio (con horas)</th>
+                            <th>Día fin (con horas)</th>
+                            <th>Total horas</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php
+                        $users = getAllUsersWithCalendar();
+                        foreach ($users as $u) {
+                            $stats = getCalendarStatsForUser($u['id']);
+                            echo '<tr>';
+                            echo '<td>'.htmlspecialchars($u['name']).'</td>';
+                            echo '<td>'.htmlspecialchars($u['username']).'</td>';
+                            echo '<td>' . ($stats['start_day'] ?? 'N/A') . '</td>';
+                            echo '<td>' . ($stats['end_day'] ?? 'N/A') . '</td>';
+                            echo '<td>' . ($stats['total_hours'] ?? 0) . '</td>';
+                            echo '<td><a href="index.php?action=view_calendar&user_id='.$u['id'].'">View Calendar</a></td>';
+                            echo '</tr>';
+                        }
+                        ?>
+                    </tbody>
+                </table>
                 <?php
+            }
+
+            // 2) Si action = 'view_calendar', se muestra el calendario detallado de ese usuario:
+            if ($action === 'view_calendar' && isset($viewUserId)) {
+                // Meses de marzo a junio
+                $monthsToShow = [
+                    ['year' => 2025, 'month' => 3],
+                    ['year' => 2025, 'month' => 4],
+                    ['year' => 2025, 'month' => 5],
+                    ['year' => 2025, 'month' => 6],
+                ];
+                // Generar todas las fechas
+                $allDates = getDateRange($monthsToShow);
+                // Crear/recuperar registros
+                $entries = getOrCreateCalendarEntries($viewUserId, $allDates);
+                // Calcular total
+                $totalHours = getTotalHours($viewUserId, $allDates);
+                // Solo el admin puede editar (since it's not the user's own calendar)
+                // But if you want to block editing for ALL other users, set $canEdit = false
+                // or keep it = true if you (admin) want to be able to edit:
+                $canEdit = true;
+                ?>
+                <h2>Calendario del usuario #<?= $viewUserId ?></h2>
+                <div class="total-hours">
+                    Total de horas: <span id="totalHoursSpan"><?= $totalHours ?></span>
+                </div>
+                <?php if (isset($_GET['msg']) && $_GET['msg'] === 'saved'): ?>
+                    <div class="success">¡Calendario guardado con éxito!</div>
+                <?php endif; ?>
+
+                <form action="index.php?action=save" method="POST">
+                    <?php
+                    // Ojo: para "updateCalendar" se usa $_SESSION['user_id'] => 
+                    //       Tendrías que modificar updateCalendar() para permitir
+                    //       actualizar a un userId distinto, o bien forzarlo.
+                    // Por simplicidad, asignamos temporalmente la variable de sesión:
+                    $_SESSION['user_id'] = $viewUserId;
+                    foreach ($monthsToShow as $m) {
+                        renderMonthlyCalendarGrid($m['year'], $m['month'], $entries, $canEdit);
+                    }
+                    ?>
+                    <button type="submit">Guardar</button>
+                </form>
+                <?php
+                // Restaurar user_id al admin (opcional, si deseas)
+                // $_SESSION['user_id'] = $currentAdminId; 
+            }
+
+            // 3) Si action = 'all_users_summary', mostramos la tabla con todos los usuarios vs días
+            if ($action === 'all_users_summary') {
                 $users = getAllUsersWithCalendar();
-                foreach ($users as $u) {
-                    $stats = getCalendarStatsForUser($u['id']);
-                    echo '<tr>';
-                    echo '<td><a href="index.php?view_user='.$u['id'].'">' . htmlspecialchars($u['name']) . '</a></td>';
-                    echo '<td>'.htmlspecialchars($u['username']).'</td>';
-                    echo '<td>' . ($stats['start_day'] ?? 'N/A') . '</td>';
-                    echo '<td>' . ($stats['end_day'] ?? 'N/A') . '</td>';
-                    echo '<td>' . ($stats['total_hours'] ?? 0) . '</td>';
-                    echo '</tr>';
+                // Rango: 1 marzo 2025 al 30 junio 2025
+                $dates = getDateRangeBetween('2025-03-01','2025-06-30');
+                ?>
+                <h2>Resumen Mensual (Todos los Usuarios)</h2>
+                <table class="calendar-grid" style="white-space: nowrap; font-size:12px;">
+                    <thead>
+                        <tr>
+                            <th>Usuario</th>
+                            <?php foreach ($dates as $d): ?>
+                                <th><?= substr($d,5,5) /*mm-dd*/ ?></th>
+                            <?php endforeach; ?>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php
+                        foreach ($users as $u) {
+                            // Crear/recuperar sus registros
+                            $entries = getOrCreateCalendarEntries($u['id'], $dates);
+                            echo '<tr>';
+                            echo '<td style="text-align:left;"><strong>'.htmlspecialchars($u['name']).'</strong><br>(' . htmlspecialchars($u['username']) . ')</td>';
+                            foreach ($dates as $d) {
+                                $hours = floatval($entries[$d] ?? 0);
+                                $bg = ($hours > 0) ? '#ffffff' : '#e0e0e0';
+                                $show = ($hours > 0) ? $hours : '';
+                                echo '<td style="background-color:'.$bg.';">'.$show.'</td>';
+                            }
+                            echo '</tr>';
+                        }
+                        ?>
+                    </tbody>
+                </table>
+                <?php
+            }
+            ?>
+
+        <?php else: ?>
+            <!-- USUARIO NORMAL (NO ADMIN) -->
+            <?php
+            // Lógica de ver su propio calendario
+            $currentUserId = $_SESSION['user_id'];
+            $monthsToShow = [
+                ['year' => 2025, 'month' => 3],
+                ['year' => 2025, 'month' => 4],
+                ['year' => 2025, 'month' => 5],
+                ['year' => 2025, 'month' => 6],
+            ];
+            $allDates = getDateRange($monthsToShow);
+            $entries = getOrCreateCalendarEntries($currentUserId, $allDates);
+            $totalHours = getTotalHours($currentUserId, $allDates);
+            $canEdit = true; // El usuario puede editar su propio calendario
+            ?>
+            <?php if (isset($_GET['msg']) && $_GET['msg'] === 'saved'): ?>
+                <div class="success">¡Calendario guardado con éxito!</div>
+            <?php endif; ?>
+            <div class="total-hours">
+                Total de horas: <span id="totalHoursSpan"><?= $totalHours ?></span>
+            </div>
+            <form action="index.php?action=save" method="POST">
+                <?php
+                foreach ($monthsToShow as $m) {
+                    renderMonthlyCalendarGrid($m['year'], $m['month'], $entries, $canEdit);
                 }
                 ?>
-            </tbody>
-        </table>
-    <?php endif; ?>
+                <button type="submit">Guardar</button>
+            </form>
+        <?php endif; ?>
 
-    <?php if ($userIdToShow !== $currentUserId): ?>
-        <p><em>Viendo el calendario del usuario #<?= $userIdToShow ?> (Modo Admin)</em></p>
-    <?php endif; ?>
-
-    <?php if (isset($_GET['msg']) && $_GET['msg'] === 'saved'): ?>
-        <div class="success">¡Calendario guardado con éxito!</div>
-    <?php endif; ?>
-
-    <div class="total-hours">
-        Total de horas: <span id="totalHoursSpan"><?= $totalHours ?></span>
-    </div>
-
-    <!-- Solo ponemos formulario si puede editar -->
-    <?php if ($canEdit): ?>
-    <form action="index.php?action=save" method="POST">
-    <?php endif; ?>
-
-    <?php
-    // Renderizar cada mes
-    foreach ($monthsToShow as $m) {
-        renderMonthlyCalendarGrid($m['year'], $m['month'], $entries, $canEdit);
-    }
-    ?>
-
-    <?php if ($canEdit): ?>
-        <button type="submit">Guardar</button>
-    </form>
-    <?php endif; ?>
-</div>
+    </div><!-- .container -->
 <?php endif; ?>
-</div>
 
-<!-- Script para recalcular total de horas en tiempo real -->
+<!-- Script para recalcular total de horas en tiempo real (para la edición normal) -->
 <script>
 document.addEventListener('DOMContentLoaded', function(){
     function updateTotalHours(){
@@ -574,7 +690,10 @@ document.addEventListener('DOMContentLoaded', function(){
                 total += val;
             }
         });
-        document.getElementById('totalHoursSpan').textContent = total;
+        const span = document.getElementById('totalHoursSpan');
+        if (span) {
+            span.textContent = total;
+        }
     }
 
     const inputs = document.querySelectorAll('.hours-input');
@@ -586,6 +705,8 @@ document.addEventListener('DOMContentLoaded', function(){
     updateTotalHours();
 });
 </script>
+
+<!-- Analytics (opcional) -->
 <script src="https://ghostwhite.jocarsa.com/analytics.js?user=khaki.jocarsa.com"></script>
 </body>
 </html>
