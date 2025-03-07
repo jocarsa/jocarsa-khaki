@@ -238,7 +238,6 @@ function getTotalHours($userId, $dates)
 
 /**
  * Todos los usuarios que tengan alguna fila en calendars
- * (o, si quieres, todos los usuarios en la tabla, quita el JOIN)
  */
 function getAllUsersWithCalendar()
 {
@@ -433,7 +432,7 @@ if ($action === 'view_calendar' && isAdmin() && isset($_GET['user_id'])) {
 
 // 7. Ver resumen de todos los usuarios (tabla con días en columnas)
 if ($action === 'all_users_summary' && isAdmin()) {
-    // Lógica más abajo en HTML
+    // Lógica se encuentra más abajo en la sección HTML
 }
 
 // -------------------------------------------------------------------
@@ -520,7 +519,7 @@ if ($action === 'all_users_summary' && isAdmin()) {
             </p>
 
             <?php
-            // 1) Si no se especificó 'view_calendar' ni 'all_users_summary', o se pidió 'list_users', 
+            // 1) Si no se especificó 'view_calendar' ni 'all_users_summary', o se pidió 'list_users',
             //    mostramos la tabla con todos los usuarios y stats.
             if (
                 ($action === '' || $action === null) 
@@ -574,9 +573,7 @@ if ($action === 'all_users_summary' && isAdmin()) {
                 $entries = getOrCreateCalendarEntries($viewUserId, $allDates);
                 // Calcular total
                 $totalHours = getTotalHours($viewUserId, $allDates);
-                // Solo el admin puede editar (since it's not the user's own calendar)
-                // But if you want to block editing for ALL other users, set $canEdit = false
-                // or keep it = true if you (admin) want to be able to edit:
+                // El admin puede editar
                 $canEdit = true;
                 ?>
                 <h2>Calendario del usuario #<?= $viewUserId ?></h2>
@@ -589,10 +586,7 @@ if ($action === 'all_users_summary' && isAdmin()) {
 
                 <form action="index.php?action=save" method="POST">
                     <?php
-                    // Ojo: para "updateCalendar" se usa $_SESSION['user_id'] => 
-                    //       Tendrías que modificar updateCalendar() para permitir
-                    //       actualizar a un userId distinto, o bien forzarlo.
-                    // Por simplicidad, asignamos temporalmente la variable de sesión:
+                    // Asignar temporalmente la variable de sesión para updateCalendar:
                     $_SESSION['user_id'] = $viewUserId;
                     foreach ($monthsToShow as $m) {
                         renderMonthlyCalendarGrid($m['year'], $m['month'], $entries, $canEdit);
@@ -601,8 +595,6 @@ if ($action === 'all_users_summary' && isAdmin()) {
                     <button type="submit">Guardar</button>
                 </form>
                 <?php
-                // Restaurar user_id al admin (opcional, si deseas)
-                // $_SESSION['user_id'] = $currentAdminId; 
             }
 
             // 3) Si action = 'all_users_summary', mostramos la tabla con todos los usuarios vs días
@@ -610,14 +602,62 @@ if ($action === 'all_users_summary' && isAdmin()) {
                 $users = getAllUsersWithCalendar();
                 // Rango: 1 marzo 2025 al 30 junio 2025
                 $dates = getDateRangeBetween('2025-03-01','2025-06-30');
+
+                // Agrupamos las fechas por año-mes (ej: '2025-03' => ['2025-03-01','2025-03-02', ...])
+                $yearMonthDays = [];
+                foreach ($dates as $d) {
+                    $yearMonth = substr($d, 0, 7); // 'YYYY-MM'
+                    if (!isset($yearMonthDays[$yearMonth])) {
+                        $yearMonthDays[$yearMonth] = [];
+                    }
+                    $yearMonthDays[$yearMonth][] = $d;
+                }
+
+                // Para mostrar el nombre del mes:
+                $monthNames = [
+                    '01' => 'Enero',
+                    '02' => 'Febrero',
+                    '03' => 'Marzo',
+                    '04' => 'Abril',
+                    '05' => 'Mayo',
+                    '06' => 'Junio',
+                    '07' => 'Julio',
+                    '08' => 'Agosto',
+                    '09' => 'Septiembre',
+                    '10' => 'Octubre',
+                    '11' => 'Noviembre',
+                    '12' => 'Diciembre'
+                ];
                 ?>
                 <h2>Resumen Mensual (Todos los Usuarios)</h2>
-                <table class="calendar-grid" style="white-space: nowrap; font-size:12px;">
+                <table class="calendar-grid supercalendario" style="white-space: nowrap; font-size:12px;">
                     <thead>
+                        <!-- ============ Fila 1: Nombre de Mes (con colspan para sus días) + "Usuario" ============ -->
                         <tr>
-                            <th>Usuario</th>
+                            <!-- 'Usuario' ocupará dos filas, así que usamos rowspan="2" -->
+                            <th rowspan="2">Usuario</th>
+
+                            <?php foreach ($yearMonthDays as $ym => $daysArr): ?>
+                                <?php
+                                    // $ym es algo como '2025-03'. Separamos año y mes:
+                                    $year = substr($ym, 0, 4);
+                                    $month = substr($ym, 5, 2);
+
+                                    // Nombre del mes según el array
+                                    $monthName = $monthNames[$month] ?? $ym;
+
+                                    // Cantidad de días para ese mes
+                                    $colspan = count($daysArr);
+                                ?>
+                                <th colspan="<?= $colspan ?>"><?= $monthName ?> <?= $year ?></th>
+                            <?php endforeach; ?>
+                        </tr>
+
+                        <!-- ============ Fila 2: Día del mes para cada fecha en orden global ============ -->
+                        <tr>
                             <?php foreach ($dates as $d): ?>
-                                <th><?= substr($d,5,5) /*mm-dd*/ ?></th>
+                                <!-- Extraer solo el día (DD) -->
+                                <th><?= substr($d, 8, 2) ?></th>
                             <?php endforeach; ?>
                         </tr>
                     </thead>
