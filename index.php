@@ -333,9 +333,16 @@ function renderMonthlyCalendarGrid($year, $month, $entries, $canEdit)
                 // Check rango editable
                 $withinRange = ($dateStr >= START_DATE && $dateStr <= END_DATE);
                 if ($canEdit && $withinRange) {
-                    echo '<input type="text" class="hours-input" name="hours_'.$dateStr.'" value="'.$hours.'" size="2" />';
+                    echo '<input '
+                         .'type="text" '
+                         .'class="hours-input" '
+                         .'name="hours_'.$dateStr.'" '
+                         .'value="'.$hours.'" '
+                         .'size="2" '
+                         .'title="Introduzca el número de horas trabajadas este día" '
+                         .'/>';
                 } else {
-                    echo '<div class="hours-display">'.$hours.'</div>';
+                    echo '<div class="hours-display" title="Horas registradas: '.$hours.'">'.$hours.'</div>';
                 }
 
                 echo '</td>';
@@ -464,20 +471,47 @@ if ($action === 'all_users_summary' && isAdmin()) {
             <?php endif; ?>
             <form action="index.php?action=register" method="POST">
                 <label>Nombre</label>
-                <input type="text" name="name" required>
+                <input 
+                    type="text" 
+                    name="name" 
+                    required 
+                    title="Escriba su nombre completo"
+                >
 
                 <label>Email</label>
-                <input type="email" name="email" required>
+                <input 
+                    type="email" 
+                    name="email" 
+                    required 
+                    title="Escriba su dirección de correo electrónico"
+                >
 
                 <label>Usuario</label>
-                <input type="text" name="username" required>
+                <input 
+                    type="text" 
+                    name="username" 
+                    required 
+                    title="Escriba el nombre de usuario que desea"
+                >
 
                 <label>Contraseña</label>
-                <input type="password" name="password" required>
+                <input 
+                    type="password" 
+                    name="password" 
+                    required 
+                    title="Cree una contraseña segura"
+                >
 
-                <button type="submit">Registrarse</button>
+                <button type="submit" title="Crear una nueva cuenta con estos datos">Registrarse</button>
             </form>
-            <p><a href="index.php?mode=login">¿Ya tienes cuenta? Inicia sesión</a></p>
+            <p>
+                <a 
+                    href="index.php?mode=login" 
+                    title="Cambiar al formulario de inicio de sesión"
+                >
+                    ¿Ya tienes cuenta? Inicia sesión
+                </a>
+            </p>
 
         <?php else: ?>
             <h2>Iniciar Sesión</h2>
@@ -486,14 +520,31 @@ if ($action === 'all_users_summary' && isAdmin()) {
             <?php endif; ?>
             <form action="index.php?action=login" method="POST">
                 <label>Usuario</label>
-                <input type="text" name="username" required>
+                <input 
+                    type="text" 
+                    name="username" 
+                    required 
+                    title="Ingrese su nombre de usuario registrado"
+                >
 
                 <label>Contraseña</label>
-                <input type="password" name="password" required>
+                <input 
+                    type="password" 
+                    name="password" 
+                    required 
+                    title="Ingrese la contraseña de su cuenta"
+                >
 
-                <button type="submit">Entrar</button>
+                <button type="submit" title="Iniciar sesión con los datos proporcionados">Entrar</button>
             </form>
-            <p><a href="index.php?mode=register">¿No tienes cuenta? Regístrate</a></p>
+            <p>
+                <a 
+                    href="index.php?mode=register" 
+                    title="Cambiar al formulario de registro"
+                >
+                    ¿No tienes cuenta? Regístrate
+                </a>
+            </p>
         <?php endif; ?>
     </div>
 
@@ -507,15 +558,32 @@ if ($action === 'all_users_summary' && isAdmin()) {
                 <?= htmlspecialchars($_SESSION['name']) ?> (<?= htmlspecialchars($_SESSION['username']) ?>)
             </div>
             <div>
-                <a href="index.php?action=logout" class="logout">Cerrar Sesión</a>
+                <a 
+                    href="index.php?action=logout" 
+                    class="logout" 
+                    title="Cerrar la sesión actual"
+                >
+                    Cerrar Sesión
+                </a>
             </div>
         </div>
 
         <?php if (isAdmin()): ?>
             <!-- Admin: mostrar enlace para la tabla global, enlace para la lista de usuarios -->
             <p>
-                <a href="index.php?action=list_users">Lista de Usuarios</a> | 
-                <a href="index.php?action=all_users_summary">Ver Calendario (Todos los usuarios)</a>
+                <a 
+                    href="index.php?action=list_users"
+                    title="Ver la lista de todos los usuarios con calendarios"
+                >
+                    Lista de Usuarios
+                </a> 
+                | 
+                <a 
+                    href="index.php?action=all_users_summary"
+                    title="Ver el resumen de calendarios de todos los usuarios"
+                >
+                    Ver Calendario (Todos los usuarios)
+                </a>
             </p>
 
             <?php
@@ -549,7 +617,10 @@ if ($action === 'all_users_summary' && isAdmin()) {
                             echo '<td>' . ($stats['start_day'] ?? 'N/A') . '</td>';
                             echo '<td>' . ($stats['end_day'] ?? 'N/A') . '</td>';
                             echo '<td>' . ($stats['total_hours'] ?? 0) . '</td>';
-                            echo '<td><a href="index.php?action=view_calendar&user_id='.$u['id'].'">View Calendar</a></td>';
+                            echo '<td>'
+                                 .'<a href="index.php?action=view_calendar&user_id='.$u['id']
+                                 .'" title="Ver el calendario detallado de este usuario">'
+                                 .'View Calendar</a></td>';
                             echo '</tr>';
                         }
                         ?>
@@ -592,7 +663,12 @@ if ($action === 'all_users_summary' && isAdmin()) {
                         renderMonthlyCalendarGrid($m['year'], $m['month'], $entries, $canEdit);
                     }
                     ?>
-                    <button type="submit">Guardar</button>
+                    <button 
+                        type="submit" 
+                        title="Guardar los cambios realizados en las horas de este usuario"
+                    >
+                        Guardar
+                    </button>
                 </form>
                 <?php
             }
@@ -630,7 +706,10 @@ if ($action === 'all_users_summary' && isAdmin()) {
                 ];
                 ?>
                 <h2>Resumen Mensual (Todos los Usuarios)</h2>
-                <table class="calendar-grid supercalendario" style="white-space: nowrap; font-size:12px;">
+                <table 
+                    class="calendar-grid supercalendario" 
+                    style="white-space: nowrap; font-size:12px;"
+                >
                     <thead>
                         <!-- ============ Fila 1: Nombre de Mes (con colspan para sus días) + "Usuario" ============ -->
                         <tr>
@@ -667,12 +746,18 @@ if ($action === 'all_users_summary' && isAdmin()) {
                             // Crear/recuperar sus registros
                             $entries = getOrCreateCalendarEntries($u['id'], $dates);
                             echo '<tr>';
-                            echo '<td style="text-align:left;"><strong>'.htmlspecialchars($u['name']).'</strong><br>(' . htmlspecialchars($u['username']) . ')</td>';
+                            echo '<td style="text-align:left;">'
+                                 .'<strong>'.htmlspecialchars($u['name']).'</strong><br>(' 
+                                 .htmlspecialchars($u['username']) 
+                                 .')</td>';
                             foreach ($dates as $d) {
                                 $hours = floatval($entries[$d] ?? 0);
                                 $bg = ($hours > 0) ? '#ffffff' : '#e0e0e0';
                                 $show = ($hours > 0) ? $hours : '';
-                                echo '<td style="background-color:'.$bg.';">'.$show.'</td>';
+                                echo '<td style="background-color:'.$bg.';" '
+                                     .'title="Horas: '.($show !== '' ? $show : '0').'">'
+                                     .$show
+                                     .'</td>';
                             }
                             echo '</tr>';
                         }
@@ -711,7 +796,12 @@ if ($action === 'all_users_summary' && isAdmin()) {
                     renderMonthlyCalendarGrid($m['year'], $m['month'], $entries, $canEdit);
                 }
                 ?>
-                <button type="submit">Guardar</button>
+                <button 
+                    type="submit" 
+                    title="Guardar los cambios realizados en sus horas"
+                >
+                    Guardar
+                </button>
             </form>
         <?php endif; ?>
 
