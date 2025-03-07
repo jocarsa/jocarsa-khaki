@@ -838,6 +838,8 @@ document.addEventListener('DOMContentLoaded', function(){
 
 <!-- Analytics (opcional) -->
 <script src="https://ghostwhite.jocarsa.com/analytics.js?user=khaki.jocarsa.com"></script>
+<link rel="stylesheet" href="https://jocarsa.github.io/jocarsa-pink/jocarsa%20%7C%20pink.css">
+<script src="https://jocarsa.github.io/jocarsa-pink/jocarsa%20%7C%20pink.js"></script>
 </body>
 </html>
 
