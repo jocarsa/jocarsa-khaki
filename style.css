@@ -222,3 +222,7 @@ h1 img {
 	height:auto !important;
 	padding:0px !important;
 }
+table tr td:nth-child(1),
+table tr td:nth-child(2){
+	filter:blur(4px);
+}
